@@ -8,16 +8,38 @@ function makePoint(x, y) {
 
 class Rect {
   constructor(x, y, w, h) {
-    this.origin = makePoint(x, y);
     this.size = makeSize(w, h);
-  }
-
-  setOrigin(x, y) {
     this.origin = makePoint(x, y);
   }
 
-  setCenter(x, y) {
-    this.setOrigin(x - this.size.w / 2, y - this.size.h / 2);
+  get size() {
+    return this._size;
+  }
+
+  set size(size) {
+    this._size = size;
+  }
+
+  get origin() {
+    return this._origin;
+  }
+
+  set origin(point) {
+    this._origin = point;
+    this._center = makePoint(
+      point.x + this.size.w / 2,
+      point.y + this.size.h / 2);
+  }
+
+  get center() {
+    return this._center;
+  }
+
+  set center(point) {
+    this._center = point;
+    this._origin = makePoint(
+      point.x - this.size.w / 2,
+      point.y - this.size.h / 2);
   }
 
   get x() { return this.origin.x; }
