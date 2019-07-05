@@ -127,8 +127,7 @@
   let player = new PlayerEntity();
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
-  // player.angle = -Math.PI / 2;
-  player.angle = 0;
+  player.angle = -Math.PI / 2; // face north
 
   let entities = [
     player,
