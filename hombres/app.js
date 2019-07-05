@@ -25,7 +25,7 @@
     }
 
     reset() {
-      for (var i in this.buttons) {
+      for (let i in this.buttons) {
         this.buttons[i].isTapped = false;
       }
     }
@@ -57,6 +57,7 @@
       this.vel = 0;
       this.turnVelocity = 0;
       this.moveVelocity = 0;
+      this.isDead = false;
     }
 
     rotate(angle) {
@@ -111,6 +112,29 @@
 
     update() {
       this.move(4);
+    }
+  }
+
+  class ExplosionEntity extends Entity {
+    constructor() {
+      super();
+      this.radius = 1;
+      this.rect.size = makeSize(1, 1);
+    }
+
+    update() {
+      this.radius *= 2;
+      let center = this.rect.center;
+      this.rect.size = makeSize(this.radius, this.radius);
+      this.rect.center = center;
+      this.isDead = this.radius > 1 << 7;
+    }
+
+    draw(ctx) {
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, 2 * Math.PI);
+      ctx.fill();
     }
   }
 
@@ -172,6 +196,7 @@
   function update() {
     let moveVel = 2;
     let turnVel = 0.1;
+
     if (controller.up.isPressed) player.move(moveVel);
     if (controller.down.isPressed) player.move(-moveVel);
     if (controller.left.isPressed) player.rotate(-turnVel);
@@ -182,15 +207,24 @@
       bullet.rect.center = player.rect.center;
       bullet.angle = player.angle;
       entities.push(bullet);
-      console.log('BOOM!');
+      console.log('PEW!');
     }
 
-    entities = entities.filter(function (entity) {
+    entities.forEach(function (entity) {
       entity.update();
       if (entity instanceof BulletEntity) {
-        return isRectOnScreen(entity.rect);
+        entity.isDead = !isRectOnScreen(entity.rect);
+        if (entity.isDead) {
+          let explosion = new ExplosionEntity();
+          explosion.rect.center = entity.rect.center;
+          entities.push(explosion);
+          console.log('BOOM!');
+        }
       }
-      return true;
+    });
+
+    entities = entities.filter(function (entity) {
+      return !entity.isDead;
     });
 
     controller.reset();
