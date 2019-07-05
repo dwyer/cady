@@ -1,10 +1,102 @@
 <html>
-	<body>
+	<head>
+		<script src="vector.js"></script>
+		<script>
+			let unit_tests = [];
+			let vector_one = new vector(1,2);
+			let vector_two = new vector(2,1);
+			function norm_test(){
+				let expected_result = Math.sqrt(5);
+				let vector_one_norm = vector_one.norm();
+				if(!vector_one_norm){
+					return false;
+				}
+				let result = (expected_result == vector_one_norm);
+				return result;
+			}
+			function dot_product_test(){
+				let expected_result = 4;
+				let dot_product = vector_one.dot_product(vector_two);
+				let result = (expected_result == dot_product);
+				return result;
+			}
+			function theta_test(){
+				let rise = 2 -1;
+				let run = 1 - 2;
+				let expected_result = arctan(rise/run);
+				let theta = vector_one.calculate_theta(vector_two);
+				let result = (expected_result == theta);
+			}
+			function cross_product_test(){				
+				let expected_dot_product = 4;
+				let rise = 2 - 1;
+				let run = 1 - 2;
+				let expected_theta = arctan(rise/run);
+				let expected_result = expected_dot_product * Math.sin(expected_theta);
+				let cross_product = vector_one.calculate_theta(vector_two);
+			}
+			function initialize(){			
+				unit_tests.push(norm_test);
+				unit_tests.push(dot_product_test);
+			}
+			function run_unit_tests(){
+				for(let unit_test_iterator = 0; unit_test_iterator < unit_tests.length; unit_test_iterator++){
+					unit_tests[unit_test_iterator].call();
+				}
+			}
+		</script>
+	</head>
+	<body onload="initialize();">
 		<table>
 			<tr>
-				<td>
-				<td>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>			
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>			
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>		
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>					
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>					
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>					
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
+			</tr>					
+			<tr>
+				<td class="test_function_name">
+				</td>
+				<td class="test_function_result">
+				</td>
 			</tr>
 		<table>
+		<input type="button" value="RUN TESTS" />
 	</body>
 </html>

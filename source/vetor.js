@@ -22,6 +22,7 @@ function vector(x_coordinate, y_coordinate)
 		let result = numerator / denominator;
 		return result;
 	}
+	//not sure what I was doing here, cross products are supposed to return vectors
 	this.cross_product = function(other_vector){
 		let dot_product_result = this.dot_product(other_vector);
 		let theta = this.calculate_theta(other_vector);
