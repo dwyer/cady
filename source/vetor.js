@@ -28,4 +28,20 @@ function vector(x_coordinate, y_coordinate)
 		let result = dot_product_result * Msth.sin(theta);
 		return result;
 	}
+	this.is_left_of = function(other_vector){
+		let result = this.x_coordinate < other_vector.x_coordinate;
+		return result;
+	}	
+	this.is_right_of = function(other_vector){
+		let result = this.x_coordinate > other_vector.x_coordinate;
+		return result;
+	}
+	this.is_above = function(other_vector){
+		let result = this.y_coordinate < other_vector.y_coordinate;
+		return result;
+	}
+	this.is_below = function(other_vector){
+		let result = this.y_coordinate > other_vector.y_coordinate;
+		return result;
+	}
 }
