@@ -22,4 +22,10 @@ function vector(x_coordinate, y_coordinate)
 		let result = numerator / denominator;
 		return result;
 	}
+	this.cross_product = function(other_vector){
+		let dot_product_result = this.dot_product(other_vector);
+		let theta = this.calculate_theta(other_vector);
+		let result = dot_product_result * Msth.sin(theta);
+		return result;
+	}
 }
