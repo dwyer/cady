@@ -1,14 +1,8 @@
 (function () {
 
-  class Entity {
-    constructor(rect) {
-      this.rect = rect;
-    }
-  }
-
   class Button {
     constructor() {
-      this.isDown = false;
+      this.isPressed = false;
       this.isTapped = false;
     }
   }
@@ -43,79 +37,172 @@
     onKeyDown(e) {
       let button = this.bindings[e.key];
       if (button) {
-        button.isDown = true;
-        button.isTapped = true;
+        button.isTapped = !button.isPressed;
+        button.isPressed = true;
       }
     }
 
     onKeyUp(e) {
       let button = this.bindings[e.key];
       if (button) {
-        button.isDown = false;
-        console.log(button);
+        button.isPressed = false;
       }
     }
   }
 
-  let ctrl = new Controller();
+  class Entity {
+    constructor() {
+      this.rect = makeRect(0, 0, 0, 0);
+      this.angle = 0;
+      this.vel = 0;
+      this.turnVelocity = 0;
+      this.moveVelocity = 0;
+    }
 
-  ctrl.bindKey('ArrowUp', ctrl.up);
-  ctrl.bindKey('ArrowDown', ctrl.down);
-  ctrl.bindKey('ArrowLeft', ctrl.left);
-  ctrl.bindKey('ArrowRight', ctrl.right);
+    rotate(angle) {
+      this.angle += angle;
+    }
 
-  ctrl.bindKey('w', ctrl.up);
-  ctrl.bindKey('a', ctrl.left);
-  ctrl.bindKey('s', ctrl.down);
-  ctrl.bindKey('d', ctrl.right);
+    move(vel) {
+      let origin = this.rect.origin;
+      origin.x += vel * Math.cos(this.angle);
+      origin.y += vel * Math.sin(this.angle);
+      this.rect.origin = origin;
+    }
 
-  document.onkeyup = function (e) {
-    ctrl.onKeyUp(e);
-  };
+    update() {
+      this.rotate(this.turnVelocity);
+      this.move(this.moveVelocity);
+    }
 
-  document.onkeydown = function (e) {
-    ctrl.onKeyDown(e);
-  };
+    draw(ctx) {}
+  }
 
-  let screenSize = makeSize(640, 480);
+  class PlayerEntity extends Entity {
+
+    draw(ctx) {
+      ctx.translate(this.rect.center.x, this.rect.center.y);
+      ctx.rotate(this.angle);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
+
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(this.rect.w, 0);
+      ctx.stroke();
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  class BulletEntity extends Entity {
+    constructor() {
+      super();
+      this.rect.size = makeSize(4, 4);
+    }
+
+    draw(ctx) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(this.rect.x, this.rect.y, this.rect.w, this.rect.h);
+    }
+
+    update() {
+      this.move(4);
+    }
+  }
+
+  let controller = new Controller();
+
+  const SCREEN_SIZE = makeSize(800, 600);
   let tileSize = makeSize(32, 32);
 
   let canvas = document.getElementById('canvas');
+  canvas.width = SCREEN_SIZE.w;
+  canvas.height = SCREEN_SIZE.h;
   let ctx = canvas.getContext('2d');
 
-  let player = new Entity(makeRect(0, 0, tileSize.w, tileSize.h));
-  player.rect.setCenter(screenSize.w/2, screenSize.h/2);
+  let player = new PlayerEntity();
+  player.rect.size = tileSize;
+  player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
+  // player.angle = -Math.PI / 2;
+  player.angle = 0;
 
-  function loop(ts) {
+  let entities = [
+    player,
+  ];
 
-    let acc = 2;
-    if (ctrl.up.isDown) {
-      player.rect.origin.y -= acc;
-    }
-    if (ctrl.down.isDown) {
-      player.rect.origin.y += acc;
-    }
-    if (ctrl.left.isDown) {
-      player.rect.origin.x -= acc;
-    }
-    if (ctrl.right.isDown) {
-      player.rect.origin.x += acc;
-    }
-    ctrl.reset();
+  function init() {
+    controller.bindKey('ArrowUp', controller.up);
+    controller.bindKey('ArrowDown', controller.down);
+    controller.bindKey('ArrowLeft', controller.left);
+    controller.bindKey('ArrowRight', controller.right);
 
+    controller.bindKey('w', controller.up);
+    controller.bindKey('a', controller.left);
+    controller.bindKey('s', controller.down);
+    controller.bindKey('d', controller.right);
+
+    controller.bindKey('h', controller.left);
+    controller.bindKey('j', controller.down);
+    controller.bindKey('k', controller.up);
+    controller.bindKey('l', controller.right);
+
+    controller.bindKey('f', controller.shoot);
+
+    document.onkeyup = function (e) {
+      controller.onKeyUp(e);
+    };
+
+    document.onkeydown = function (e) {
+      controller.onKeyDown(e);
+    };
+  }
+
+  /* Handle input */
+  function update() {
+    let moveVel = 2;
+    let turnVel = 0.1;
+    if (controller.up.isPressed) player.move(moveVel);
+    if (controller.down.isPressed) player.move(-moveVel);
+    if (controller.left.isPressed) player.rotate(-turnVel);
+    if (controller.right.isPressed) player.rotate(turnVel);
+
+    if (controller.shoot.isTapped) {
+      let bullet = new BulletEntity();
+      bullet.rect.center = player.rect.center;
+      bullet.angle = player.angle;
+      entities.push(bullet);
+      console.log('BOOM!');
+    }
+
+    for (let i in entities) {
+      entities[i].update();
+    }
+
+    controller.reset();
+  }
+
+  /* Update the screen */
+  function draw(ctx) {
+    // clear screen
     ctx.fillStyle = '#000000';
-    ctx.rect(0, 0, screenSize.w, screenSize.h);
-    ctx.fill();
-    ctx.fillStyle = '#ff0000';
-    ctx.fillRect(player.rect.origin.x, player.rect.origin.y, player.rect.size.w, player.rect.size.h);
+    ctx.fillRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
+    // draw entities
+    for (let i in entities) {
+      entities[i].draw(ctx);
+    }
+  }
 
+  function loop(_) {
+    update();
+    draw(ctx);
     window.requestAnimationFrame(loop);
   }
 
-  let start = null;
-  window.requestAnimationFrame(function (ts) {
-    start = ts;
-    window.requestAnimationFrame(loop);
-  });
+  init();
+  window.requestAnimationFrame(loop);
 
 })();
