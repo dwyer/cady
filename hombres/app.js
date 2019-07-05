@@ -151,6 +151,7 @@
     controller.bindKey('l', controller.right);
 
     controller.bindKey('f', controller.shoot);
+    controller.bindKey(' ', controller.shoot);
 
     document.onkeyup = function (e) {
       controller.onKeyUp(e);
@@ -159,6 +160,13 @@
     document.onkeydown = function (e) {
       controller.onKeyDown(e);
     };
+  }
+
+  function isRectOnScreen(rect) {
+    return rect.x + rect.w >= 0 &&
+      rect.y + rect.h >= 0 &&
+      rect.x < SCREEN_SIZE.w &&
+      rect.y < SCREEN_SIZE.h;
   }
 
   /* Handle input */
@@ -178,9 +186,13 @@
       console.log('BOOM!');
     }
 
-    for (let i in entities) {
-      entities[i].update();
-    }
+    entities = entities.filter(function (entity) {
+      entity.update();
+      if (entity instanceof BulletEntity) {
+        return isRectOnScreen(entity.rect);
+      }
+      return true;
+    });
 
     controller.reset();
   }
