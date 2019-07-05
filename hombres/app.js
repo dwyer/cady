@@ -1,32 +1,5 @@
 (function () {
 
-  function makeSize(w, h) {
-    return {w: w, h: h};
-  }
-
-  function makePoint(x, y) {
-    return {x: x, y: y};
-  }
-
-  class Rect {
-    constructor(x, y, w, h) {
-      this.origin = makePoint(x, y);
-      this.size = makeSize(w, h);
-    }
-
-    setOrigin(x, y) {
-      this.origin = makePoint(x, y);
-    }
-
-    setCenter(x, y) {
-      this.setOrigin(x - this.size.w / 2, y - this.size.h / 2);
-    }
-  }
-
-  function makeRect(x, y, w, h) {
-    return new Rect(x, y, w, h);
-  }
-
   class Entity {
     constructor(rect) {
       this.rect = rect;
