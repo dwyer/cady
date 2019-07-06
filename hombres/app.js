@@ -48,10 +48,11 @@
       this.rect.origin = origin;
     }
 
-    update() {
-    }
+    update() {}
 
+    preDraw(ctx) {}
     draw(ctx) {}
+    postDraw(ctx) {}
   }
 
   class CircleEntity extends Entity {
@@ -69,27 +70,44 @@
     }
   }
 
-  class PlayerEntity extends Entity {
+  class RectEntity extends Entity {
 
-    draw(ctx) {
+    static DEFAULT_COLOR = 'white';
+
+    constructor() {
+      super();
+      this.color = RectEntity.DEFAULT_COLOR;
+    }
+
+    preDraw(ctx) {
       ctx.translate(this.rect.center.x, this.rect.center.y);
       ctx.rotate(this.direction);
+    }
 
-      ctx.fillStyle = '#ffffff';
+    draw(ctx) {
+      ctx.fillStyle = this.color;
       ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
+    }
 
+    postDraw(ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  class PlayerEntity extends RectEntity {
+
+    draw(ctx) {
+      super.draw(ctx);
       ctx.strokeStyle = '#ff0000';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(this.rect.w, 0);
       ctx.stroke();
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
   }
 
-  class BulletEntity extends Entity {
+  class BulletEntity extends RectEntity {
     static BULLET_SIZE = makeSize(4, 4);
     static BULLET_VELOCITY = 10 * PHI;
     static BULLET_COLOR = 'white';
@@ -97,11 +115,6 @@
     constructor() {
       super();
       this.rect.size = BulletEntity.BULLET_SIZE;
-    }
-
-    draw(ctx) {
-      ctx.fillStyle = BulletEntity.BULLET_COLOR;
-      ctx.fillRect(this.rect.x, this.rect.y, this.rect.w, this.rect.h);
     }
 
     update() {
@@ -206,7 +219,9 @@
     ctx.fillRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
     // draw entities
     for (let i in entities) {
+      entities[i].preDraw(ctx);
       entities[i].draw(ctx);
+      entities[i].postDraw(ctx);
     }
   }
 
