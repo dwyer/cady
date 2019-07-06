@@ -41,10 +41,10 @@
       this.direction += angle;
     }
 
-    move(velocity) {
+    move(distance) {
       let origin = this.rect.origin;
-      origin.x += velocity * Math.cos(this.direction);
-      origin.y += velocity * Math.sin(this.direction);
+      origin.x += distance * Math.cos(this.direction);
+      origin.y += distance * Math.sin(this.direction);
       this.rect.origin = origin;
     }
 
