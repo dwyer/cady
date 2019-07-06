@@ -1,5 +1,9 @@
 (function () {
 
+  const PI = Math.PI;
+  const PI2 = 2 * PI;
+  const PHI = 1.61803399;
+
   class Button {
     constructor() {
       this.isPressed = false;
@@ -53,37 +57,47 @@
   class Entity {
     constructor() {
       this.rect = makeRect(0, 0, 0, 0);
-      this.angle = 0;
-      this.vel = 0;
-      this.turnVelocity = 0;
-      this.moveVelocity = 0;
+      this.direction = 0;
       this.isDead = false;
     }
 
     rotate(angle) {
-      this.angle += angle;
+      this.direction += angle;
     }
 
-    move(vel) {
+    move(velocity) {
       let origin = this.rect.origin;
-      origin.x += vel * Math.cos(this.angle);
-      origin.y += vel * Math.sin(this.angle);
+      origin.x += velocity * Math.cos(this.direction);
+      origin.y += velocity * Math.sin(this.direction);
       this.rect.origin = origin;
     }
 
     update() {
-      this.rotate(this.turnVelocity);
-      this.move(this.moveVelocity);
     }
 
     draw(ctx) {}
+  }
+
+  class CircleEntity extends Entity {
+    constructor() {
+      super();
+      this.color = 'white';
+      this.radius = 1;
+    }
+
+    draw(ctx) {
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, PI2);
+      ctx.fill();
+    }
   }
 
   class PlayerEntity extends Entity {
 
     draw(ctx) {
       ctx.translate(this.rect.center.x, this.rect.center.y);
-      ctx.rotate(this.angle);
+      ctx.rotate(this.direction);
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
@@ -100,41 +114,39 @@
   }
 
   class BulletEntity extends Entity {
+    static BULLET_SIZE = makeSize(4, 4);
+    static BULLET_VELOCITY = 10 * PHI;
+    static BULLET_COLOR = 'white';
+
     constructor() {
       super();
-      this.rect.size = makeSize(4, 4);
+      this.rect.size = BulletEntity.BULLET_SIZE;
     }
 
     draw(ctx) {
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = BulletEntity.BULLET_COLOR;
       ctx.fillRect(this.rect.x, this.rect.y, this.rect.w, this.rect.h);
     }
 
     update() {
-      this.move(4);
+      this.move(BulletEntity.BULLET_VELOCITY);
     }
   }
 
-  class ExplosionEntity extends Entity {
+  class ExplosionEntity extends CircleEntity {
+    static INIT_RADIUS = 8;
+    static MAX_RADIUS = 1 << 7;
+    static COLOR = 'red';
+
     constructor() {
       super();
-      this.radius = 1;
-      this.rect.size = makeSize(1, 1);
+      this.radius = ExplosionEntity.INIT_RADIUS;
+      this.color = ExplosionEntity.COLOR;
     }
 
     update() {
-      this.radius *= 2;
-      let center = this.rect.center;
-      this.rect.size = makeSize(this.radius, this.radius);
-      this.rect.center = center;
-      this.isDead = this.radius > 1 << 7;
-    }
-
-    draw(ctx) {
-      ctx.fillStyle = '#ff0000';
-      ctx.beginPath();
-      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, 2 * Math.PI);
-      ctx.fill();
+      this.radius *= PHI;
+      this.isDead = this.radius > ExplosionEntity.MAX_RADIUS;
     }
   }
 
@@ -151,7 +163,7 @@
   let player = new PlayerEntity();
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
-  player.angle = -Math.PI / 2; // face north
+  player.direction = -Math.PI / 2; // face north
 
   let entities = [
     player,
@@ -186,6 +198,9 @@
   }
 
   function isRectOnScreen(rect) {
+    if (rect instanceof Entity) {
+      rect = rect.rect;
+    }
     return rect.x + rect.w >= 0 &&
       rect.y + rect.h >= 0 &&
       rect.x < SCREEN_SIZE.w &&
@@ -205,7 +220,7 @@
     if (controller.shoot.isTapped) {
       let bullet = new BulletEntity();
       bullet.rect.center = player.rect.center;
-      bullet.angle = player.angle;
+      bullet.direction = player.direction;
       entities.push(bullet);
       console.log('PEW!');
     }
@@ -213,7 +228,7 @@
     entities.forEach(function (entity) {
       entity.update();
       if (entity instanceof BulletEntity) {
-        entity.isDead = !isRectOnScreen(entity.rect);
+        entity.isDead = !isRectOnScreen(entity);
         if (entity.isDead) {
           let explosion = new ExplosionEntity();
           explosion.rect.center = entity.rect.center;
@@ -241,9 +256,12 @@
     }
   }
 
+  let frameCount = 0;
+
   function loop(_) {
     update();
     draw(ctx);
+    frameCount++;
     window.requestAnimationFrame(loop);
   }
 
