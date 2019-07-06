@@ -46,6 +46,14 @@ class Rect {
   get y() { return this.origin.y; }
   get w() { return this.size.w; }
   get h() { return this.size.h; }
+
+  isOnRect(rect) {
+    return (
+      this.x + this.w >= rect.x &&
+      this.y + this.h >= rect.y &&
+      this.x < rect.x + rect.w &&
+      this.y < rect.x + rect.h);
+  }
 }
 
 function makeRect(x, y, w, h) {

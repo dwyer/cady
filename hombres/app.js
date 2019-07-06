@@ -4,6 +4,8 @@
   const TWO_PI = 2 * PI;
   const TAU = PI / 2;
   const PHI = 1.61803399;
+  const SCREEN_SIZE = makeSize(800, 600);
+  const SCREEN_RECT = makeRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
 
   class MyController extends Controller {
     constructor() {
@@ -37,7 +39,7 @@
       this.isDead = false;
     }
 
-    rotate(angle) {
+    turn(angle) {
       this.direction += angle;
     }
 
@@ -53,13 +55,25 @@
     preDraw(ctx) {}
     draw(ctx) {}
     postDraw(ctx) {}
+
+    get isOnScreen() {
+      return this.rect.isOnRect(SCREEN_RECT);
+    }
   }
 
-  class CircleEntity extends Entity {
+  class ShapeEntity extends Entity {
+    static DEFAULT_COLOR = 'white';
+
     constructor() {
       super();
-      this.color = 'white';
-      this.radius = 1;
+      this.color = ShapeEntity.DEFAULT_COLOR;
+    }
+  }
+
+  class CircleEntity extends ShapeEntity {
+    constructor() {
+      super();
+      this.radius = 0;
     }
 
     draw(ctx) {
@@ -70,14 +84,7 @@
     }
   }
 
-  class RectEntity extends Entity {
-
-    static DEFAULT_COLOR = 'white';
-
-    constructor() {
-      super();
-      this.color = RectEntity.DEFAULT_COLOR;
-    }
+  class RectEntity extends ShapeEntity {
 
     preDraw(ctx) {
       ctx.translate(this.rect.center.x, this.rect.center.y);
@@ -94,7 +101,7 @@
     }
   }
 
-  class PlayerEntity extends RectEntity {
+  class Player extends RectEntity {
 
     draw(ctx) {
       super.draw(ctx);
@@ -107,29 +114,28 @@
     }
   }
 
-  class BulletEntity extends RectEntity {
-    static BULLET_SIZE = makeSize(4, 4);
-    static BULLET_VELOCITY = 10 * PHI;
-    static BULLET_COLOR = 'white';
+  class Bullet extends CircleEntity {
+    static VELOCITY = 10 * PHI;
+    static RADIUS = 2;
 
     constructor() {
       super();
-      this.rect.size = BulletEntity.BULLET_SIZE;
+      this.radius = Bullet.RADIUS;
     }
 
     update() {
-      this.move(BulletEntity.BULLET_VELOCITY);
+      this.move(Bullet.VELOCITY);
     }
   }
 
   class ExplosionEntity extends CircleEntity {
-    static INIT_RADIUS = 8;
-    static MAX_RADIUS = 1 << 7;
+    static MIN_RADIUS = 2;
+    static MAX_RADIUS = 1 << 6;
     static COLOR = 'red';
 
     constructor() {
       super();
-      this.radius = ExplosionEntity.INIT_RADIUS;
+      this.radius = ExplosionEntity.MIN_RADIUS;
       this.color = ExplosionEntity.COLOR;
     }
 
@@ -141,7 +147,6 @@
 
   let controller = new MyController();
 
-  const SCREEN_SIZE = makeSize(800, 600);
   let tileSize = makeSize(32, 32);
 
   let canvas = document.getElementById('canvas');
@@ -149,7 +154,7 @@
   canvas.height = SCREEN_SIZE.h;
   let ctx = canvas.getContext('2d');
 
-  let player = new PlayerEntity();
+  let player = new Player();
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
   player.direction = -TAU; // face north
@@ -166,14 +171,6 @@
     controller.listen(document);
   }
 
-  function isRectOnScreen(rect) {
-    if (rect instanceof Entity) {
-      rect = rect.rect;
-    }
-    return rect.x + rect.w >= 0 && rect.y + rect.h >= 0 &&
-      rect.x < SCREEN_SIZE.w && rect.y < SCREEN_SIZE.h;
-  }
-
   /* Handle input */
   function update() {
     const MOVE_VEL = 2;
@@ -181,11 +178,11 @@
 
     if (controller.buttons.up.isPressed) player.move(MOVE_VEL);
     if (controller.buttons.down.isPressed) player.move(-MOVE_VEL);
-    if (controller.buttons.left.isPressed) player.rotate(-TURL_VEL);
-    if (controller.buttons.right.isPressed) player.rotate(TURL_VEL);
+    if (controller.buttons.left.isPressed) player.turn(-TURL_VEL);
+    if (controller.buttons.right.isPressed) player.turn(TURL_VEL);
 
     if (controller.buttons.fire.isTapped) {
-      let bullet = new BulletEntity();
+      let bullet = new Bullet();
       bullet.rect.center = player.rect.center;
       bullet.direction = player.direction;
       entities.push(bullet);
@@ -194,8 +191,8 @@
 
     entities.forEach(function (entity) {
       entity.update();
-      if (entity instanceof BulletEntity) {
-        entity.isDead = !isRectOnScreen(entity);
+      if (entity instanceof Bullet) {
+        entity.isDead = !entity.isOnScreen;
         if (entity.isDead) {
           let explosion = new ExplosionEntity();
           explosion.rect.center = entity.rect.center;
