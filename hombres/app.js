@@ -5,61 +5,6 @@
   const TAU = PI / 2;
   const PHI = 1.61803399;
 
-  class Button {
-    constructor(name) {
-      this.name = name;
-      this.isPressed = false;
-      this.isTapped = false;
-    }
-  }
-
-  class Controller {
-    constructor() {
-      this.bindings = {};
-      this.buttons = {};
-    }
-
-    addButton(name) {
-      let button = new Button(name);
-      this.buttons[name] = button;
-    }
-
-    reset() {
-      for (let i in this.buttons) {
-        this.buttons[i].isTapped = false;
-      }
-    }
-
-    bindKey(key, buttonName) {
-      this.bindings[key] = this.buttons[buttonName];
-    }
-
-    onKeyDown(e) {
-      let button = this.bindings[e.key];
-      if (button) {
-        button.isTapped = !button.isPressed;
-        button.isPressed = true;
-      }
-    }
-
-    onKeyUp(e) {
-      let button = this.bindings[e.key];
-      if (button) {
-        button.isPressed = false;
-      }
-    }
-
-    listen(obj) {
-      let me = this;
-      obj.onkeyup = function (e) {
-        me.onKeyUp(e);
-      };
-      obj.onkeydown = function (e) {
-        me.onKeyDown(e);
-      };
-    }
-  }
-
   class MyController extends Controller {
     constructor() {
       super();
