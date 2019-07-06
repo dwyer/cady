@@ -1,11 +1,13 @@
 (function () {
 
   const PI = Math.PI;
-  const PI2 = 2 * PI;
+  const TWO_PI = 2 * PI;
+  const TAU = PI / 2;
   const PHI = 1.61803399;
 
   class Button {
-    constructor() {
+    constructor(name) {
+      this.name = name;
       this.isPressed = false;
       this.isTapped = false;
     }
@@ -13,19 +15,13 @@
 
   class Controller {
     constructor() {
-      this.up = new Button();
-      this.down = new Button();
-      this.left = new Button();
-      this.right = new Button();
-      this.shoot = new Button();
-      this.buttons = [
-        this.up,
-        this.down,
-        this.left,
-        this.right,
-        this.shoot,
-      ];
       this.bindings = {};
+      this.buttons = {};
+    }
+
+    addButton(name) {
+      let button = new Button(name);
+      this.buttons[name] = button;
     }
 
     reset() {
@@ -34,8 +30,8 @@
       }
     }
 
-    bindKey(key, button) {
-      this.bindings[key] = button;
+    bindKey(key, buttonName) {
+      this.bindings[key] = this.buttons[buttonName];
     }
 
     onKeyDown(e) {
@@ -51,6 +47,41 @@
       if (button) {
         button.isPressed = false;
       }
+    }
+
+    listen(obj) {
+      let me = this;
+      obj.onkeyup = function (e) {
+        me.onKeyUp(e);
+      };
+      obj.onkeydown = function (e) {
+        me.onKeyDown(e);
+      };
+    }
+  }
+
+  class MyController extends Controller {
+    constructor() {
+      super();
+
+      this.addButton('up');
+      this.addButton('down');
+      this.addButton('left');
+      this.addButton('right');
+      this.addButton('shoot');
+
+      this.bindKey('ArrowUp', 'up');
+      this.bindKey('ArrowDown', 'down');
+      this.bindKey('ArrowLeft', 'left');
+      this.bindKey('ArrowRight', 'right');
+
+      this.bindKey('w', 'up');
+      this.bindKey('a', 'left');
+      this.bindKey('s', 'down');
+      this.bindKey('d', 'right');
+
+      this.bindKey('f', 'shoot');
+      this.bindKey(' ', 'shoot');
     }
   }
 
@@ -88,7 +119,7 @@
     draw(ctx) {
       ctx.fillStyle = this.color;
       ctx.beginPath();
-      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, PI2);
+      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, TWO_PI);
       ctx.fill();
     }
   }
@@ -150,7 +181,7 @@
     }
   }
 
-  let controller = new Controller();
+  let controller = new MyController();
 
   const SCREEN_SIZE = makeSize(800, 600);
   let tileSize = makeSize(32, 32);
@@ -163,61 +194,39 @@
   let player = new PlayerEntity();
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
-  player.direction = -Math.PI / 2; // face north
+  player.direction = -TAU; // face north
 
   let entities = [
     player,
   ];
 
   function init() {
-    controller.bindKey('ArrowUp', controller.up);
-    controller.bindKey('ArrowDown', controller.down);
-    controller.bindKey('ArrowLeft', controller.left);
-    controller.bindKey('ArrowRight', controller.right);
-
-    controller.bindKey('w', controller.up);
-    controller.bindKey('a', controller.left);
-    controller.bindKey('s', controller.down);
-    controller.bindKey('d', controller.right);
-
-    controller.bindKey('h', controller.left);
-    controller.bindKey('j', controller.down);
-    controller.bindKey('k', controller.up);
-    controller.bindKey('l', controller.right);
-
-    controller.bindKey('f', controller.shoot);
-    controller.bindKey(' ', controller.shoot);
-
-    document.onkeyup = function (e) {
-      controller.onKeyUp(e);
-    };
-
-    document.onkeydown = function (e) {
-      controller.onKeyDown(e);
-    };
+    controller.bindKey('h', 'left');
+    controller.bindKey('j', 'down');
+    controller.bindKey('k', 'up');
+    controller.bindKey('l', 'right');
+    controller.listen(document);
   }
 
   function isRectOnScreen(rect) {
     if (rect instanceof Entity) {
       rect = rect.rect;
     }
-    return rect.x + rect.w >= 0 &&
-      rect.y + rect.h >= 0 &&
-      rect.x < SCREEN_SIZE.w &&
-      rect.y < SCREEN_SIZE.h;
+    return rect.x + rect.w >= 0 && rect.y + rect.h >= 0 &&
+      rect.x < SCREEN_SIZE.w && rect.y < SCREEN_SIZE.h;
   }
 
   /* Handle input */
   function update() {
-    let moveVel = 2;
-    let turnVel = 0.1;
+    const MOVE_VEL = 2;
+    const TURL_VEL = 0.1;
 
-    if (controller.up.isPressed) player.move(moveVel);
-    if (controller.down.isPressed) player.move(-moveVel);
-    if (controller.left.isPressed) player.rotate(-turnVel);
-    if (controller.right.isPressed) player.rotate(turnVel);
+    if (controller.buttons.up.isPressed) player.move(MOVE_VEL);
+    if (controller.buttons.down.isPressed) player.move(-MOVE_VEL);
+    if (controller.buttons.left.isPressed) player.rotate(-TURL_VEL);
+    if (controller.buttons.right.isPressed) player.rotate(TURL_VEL);
 
-    if (controller.shoot.isTapped) {
+    if (controller.buttons.shoot.isTapped) {
       let bullet = new BulletEntity();
       bullet.rect.center = player.rect.center;
       bullet.direction = player.direction;
