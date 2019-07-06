@@ -13,7 +13,7 @@
       this.addButton('down');
       this.addButton('left');
       this.addButton('right');
-      this.addButton('shoot');
+      this.addButton('fire');
 
       this.bindKey('ArrowUp', 'up');
       this.bindKey('ArrowDown', 'down');
@@ -25,8 +25,8 @@
       this.bindKey('s', 'down');
       this.bindKey('d', 'right');
 
-      this.bindKey('f', 'shoot');
-      this.bindKey(' ', 'shoot');
+      this.bindKey('f', 'fire');
+      this.bindKey(' ', 'fire');
     }
   }
 
@@ -184,7 +184,7 @@
     if (controller.buttons.left.isPressed) player.rotate(-TURL_VEL);
     if (controller.buttons.right.isPressed) player.rotate(TURL_VEL);
 
-    if (controller.buttons.shoot.isTapped) {
+    if (controller.buttons.fire.isTapped) {
       let bullet = new BulletEntity();
       bullet.rect.center = player.rect.center;
       bullet.direction = player.direction;
