@@ -3,7 +3,7 @@ function square(x) {
 }
 
 function randInt(x) {
-  return Math.round(Math.random() * x);
+  return Math.floor(Math.random() * x);
 }
 
 function makeSize(w, h) {
