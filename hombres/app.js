@@ -70,6 +70,35 @@
     get isOnScreen() {
       return this.rect.isOnRect(SCREEN_RECT);
     }
+
+    get corners() {
+      let corners = [
+        makePoint(this.rect.x + this.rect.w, this.rect.y + this.rect.h),
+        makePoint(this.rect.x,               this.rect.y + this.rect.h),
+        makePoint(this.rect.x,               this.rect.y),
+        makePoint(this.rect.x + this.rect.w, this.rect.y),
+      ];
+      let theta = this.direction + TAU / 8;
+      let points = [];
+      for (let i = 0; i < 4; i++) {
+        let r = distanceBetween(this.rect.center, corners[i]);
+        let p = makePoint(
+          this.rect.center.x + r * Math.cos(theta),
+          this.rect.center.y + r * Math.sin(theta));
+        points.push(p);
+        theta += TAU / 4;
+      }
+      return points;
+    }
+
+    get boundingBox() {
+      let pts = this.corners;
+      let minX = Math.min(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
+      let maxX = Math.max(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
+      let minY = Math.min(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
+      let maxY = Math.max(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
+      return makeRect(minX, minY, maxX-minX, maxY-minY);
+    }
   }
 
   class ShapeEntity extends Entity {
@@ -109,7 +138,16 @@
 
     postDraw(ctx) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.drawBoundingBox(ctx);
     }
+
+    drawBoundingBox(ctx) {
+      let rect = this.boundingBox;
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    }
+
   }
 
   class Player extends RectEntity {
@@ -215,7 +253,8 @@
 
     entities.forEach(function (entity) {
       if (entity instanceof Enemy) {
-        entity.direction = Math.atan2(player.rect.y - entity.rect.y, player.rect.x - entity.rect.x);
+        entity.direction = Math.atan2(player.rect.y - entity.rect.y,
+          player.rect.x - entity.rect.x);
         let distance = distanceBetween(player.rect.center, entity.rect.center);
         entity.move(Math.min(MOVE_VEL, distance));
         if (distance < 1) {
