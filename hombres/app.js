@@ -1,8 +1,6 @@
 (function () {
 
-  const PI = Math.PI;
-  const TWO_PI = 2 * PI;
-  const TAU = PI / 2;
+  const TAU = 2 * Math.PI;
   const PHI = 1.61803399;
   const SCREEN_SIZE = makeSize(800, 600);
   const SCREEN_RECT = makeRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
@@ -92,7 +90,7 @@
     draw(ctx) {
       ctx.fillStyle = this.color;
       ctx.beginPath();
-      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, TWO_PI);
+      ctx.arc(this.rect.center.x, this.rect.center.y, this.radius, 0, TAU);
       ctx.fill();
     }
   }
@@ -177,7 +175,7 @@
   let player = new Player();
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
-  player.direction = -TAU; // face north
+  player.direction = -TAU / 4; // face north
 
   let entities = [
     player,
