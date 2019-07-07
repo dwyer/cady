@@ -3,7 +3,6 @@
   const TAU = 2 * Math.PI;
   const PHI = 1.61803399;
   const SCREEN_SIZE = makeSize(800, 600);
-  const SCREEN_RECT = makeRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
 
   function randomPointOnEdgeOfScreen() {
       switch (randInt(4)) {
@@ -68,7 +67,7 @@
     postDraw(ctx) {}
 
     get isOnScreen() {
-      return this.rect.isOnRect(SCREEN_RECT);
+      return this.rect.isInBounds(SCREEN_SIZE);
     }
 
     get corners() {
@@ -230,12 +229,12 @@
   /* Handle input */
   function update() {
     const MOVE_VEL = 2;
-    const TURL_VEL = 0.1;
+    const TURN_VEL = 0.06;
 
     if (controller.buttons.up.isPressed) player.move(MOVE_VEL);
     if (controller.buttons.down.isPressed) player.move(-MOVE_VEL);
-    if (controller.buttons.left.isPressed) player.turn(-TURL_VEL);
-    if (controller.buttons.right.isPressed) player.turn(TURL_VEL);
+    if (controller.buttons.left.isPressed) player.turn(-TURN_VEL);
+    if (controller.buttons.right.isPressed) player.turn(TURN_VEL);
 
     if (controller.buttons.fire.isTapped) {
       let bullet = new Bullet();
@@ -251,7 +250,7 @@
       entities.push(enemy);
     }
 
-    entities.forEach(function (entity) {
+    entities.forEach((entity) => {
       if (entity instanceof Enemy) {
         entity.direction = Math.atan2(player.rect.y - entity.rect.y,
           player.rect.x - entity.rect.x);
@@ -279,7 +278,7 @@
       }
     });
 
-    entities = entities.filter(function (entity) {
+    entities = entities.filter((entity) => {
       return !entity.isDead;
     });
 

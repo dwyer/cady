@@ -59,12 +59,23 @@ class Rect {
   get w() { return this.size.w; }
   get h() { return this.size.h; }
 
-  isOnRect(rect) {
+  /*
+   * Returns true if this rect overlapped with other rect at any point
+   */
+  isOnRect(other) {
     return (
-      this.x + this.w >= rect.x &&
-      this.y + this.h >= rect.y &&
-      this.x < rect.x + rect.w &&
-      this.y < rect.x + rect.h);
+      this.x + this.w >= other.x &&
+      this.y + this.h >= other.y &&
+      this.x < other.x + other.w &&
+      this.y < other.x + other.h);
+  }
+
+  isInBounds(other) {
+    return (
+      this.x + this.w >= 0 &&
+      this.y + this.h >= 0 &&
+      this.x < other.w &&
+      this.y < other.h);
   }
 }
 
