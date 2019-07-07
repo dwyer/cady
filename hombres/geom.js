@@ -1,9 +1,21 @@
+function square(x) {
+  return x * x;
+}
+
+function randInt(x) {
+  return Math.round(Math.random() * x);
+}
+
 function makeSize(w, h) {
   return {w: w, h: h};
 }
 
 function makePoint(x, y) {
   return {x: x, y: y};
+}
+
+function distanceBetween(p, q) {
+  return Math.sqrt(square(p.x - q.x) + square(p.y - q.y));
 }
 
 class Rect {

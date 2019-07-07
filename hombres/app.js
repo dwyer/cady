@@ -128,6 +128,13 @@
     }
   }
 
+  class Enemy extends RectEntity {
+    constructor() {
+      super();
+      this.rect.size = tileSize;
+    }
+  }
+
   class ExplosionEntity extends CircleEntity {
     static MIN_RADIUS = 2;
     static MAX_RADIUS = 1 << 6;
@@ -189,7 +196,31 @@
       console.log('PEW!');
     }
 
+    if (frameCount % 200 == 0) {
+      let enemy = new Enemy();
+      let center = randInt(2) == 0 ?
+        makePoint(0, randInt(SCREEN_SIZE.h)) :
+        makePoint(randInt(SCREEN_SIZE.w), 0);
+      enemy.rect.center = center;
+      console.log(enemy.rect.center);
+      entities.push(enemy);
+    }
+
     entities.forEach(function (entity) {
+      if (entity instanceof Enemy) {
+        entity.direction = Math.atan2(player.rect.y - entity.rect.y, player.rect.x - entity.rect.x);
+        let distance = distanceBetween(player.rect.center, entity.rect.center);
+        entity.move(Math.min(MOVE_VEL, distance));
+        if (distance < 1) {
+          entity.isDead = true;
+        }
+        if (entity.isDead) {
+          let explosion = new ExplosionEntity();
+          explosion.rect.center = entity.rect.center;
+          entities.push(explosion);
+          console.log('BOOM!');
+        }
+      }
       entity.update();
       if (entity instanceof Bullet) {
         entity.isDead = !entity.isOnScreen;
