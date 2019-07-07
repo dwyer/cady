@@ -7,6 +7,19 @@
   const SCREEN_SIZE = makeSize(800, 600);
   const SCREEN_RECT = makeRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
 
+  function randomPointOnEdgeOfScreen() {
+      switch (randInt(4)) {
+        case 0:
+          return makePoint(0, randInt(SCREEN_SIZE.h));
+        case 1:
+          return makePoint(randInt(SCREEN_SIZE.w), 0);
+        case 2:
+          return makePoint(SCREEN_SIZE.w, randInt(SCREEN_SIZE.h));
+        case 3:
+          return makePoint(randInt(SCREEN_SIZE.w), SCREEN_SIZE.h);
+      }
+  }
+
   class MyController extends Controller {
     constructor() {
       super();
@@ -196,23 +209,9 @@
       console.log('PEW!');
     }
     if (frameCount % 200 == 0) {
+      // spawn enemy at the edge of the screen
       let enemy = new Enemy();
-      // spawn at the edge of the screen
-      switch (randInt(4)) {
-        case 0:
-          enemy.rect.center = makePoint(0, randInt(SCREEN_SIZE.h));
-          break;
-        case 1:
-          enemy.rect.center = makePoint(randInt(SCREEN_SIZE.w), 0);
-          break;
-        case 2:
-          enemy.rect.center = makePoint(SCREEN_SIZE.w, randInt(SCREEN_SIZE.h));
-          break;
-        case 3:
-          enemy.rect.center = makePoint(randInt(SCREEN_SIZE.w), SCREEN_SIZE.h);
-          break;
-      }
-      console.log(enemy.rect.center);
+      enemy.rect.center = randomPointOnEdgeOfScreen();
       entities.push(enemy);
     }
 
