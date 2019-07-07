@@ -195,13 +195,23 @@
       entities.push(bullet);
       console.log('PEW!');
     }
-
     if (frameCount % 200 == 0) {
       let enemy = new Enemy();
-      let center = randInt(2) == 0 ?
-        makePoint(0, randInt(SCREEN_SIZE.h)) :
-        makePoint(randInt(SCREEN_SIZE.w), 0);
-      enemy.rect.center = center;
+      // spawn at the edge of the screen
+      switch (randInt(4)) {
+        case 0:
+          enemy.rect.center = makePoint(0, randInt(SCREEN_SIZE.h));
+          break;
+        case 1:
+          enemy.rect.center = makePoint(randInt(SCREEN_SIZE.w), 0);
+          break;
+        case 2:
+          enemy.rect.center = makePoint(SCREEN_SIZE.w, randInt(SCREEN_SIZE.h));
+          break;
+        case 3:
+          enemy.rect.center = makePoint(randInt(SCREEN_SIZE.w), SCREEN_SIZE.h);
+          break;
+      }
       console.log(enemy.rect.center);
       entities.push(enemy);
     }
