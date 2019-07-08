@@ -133,6 +133,30 @@
 
   class RectEntity extends ShapeEntity {
 
+    draw(ctx) {
+      ctx.translate(this.rect.center.x, this.rect.center.y);
+      ctx.rotate(this.direction);
+      ctx.fillStyle = this.color;
+      ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // this.drawBoundingBox(ctx);
+    }
+
+    drawBoundingBox(ctx) {
+      let rect = this.boundingBox;
+      ctx.strokeStyle = '#ffff00';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    }
+  }
+
+  class Actor extends RectEntity {
+
+    constructor() {
+      super();
+      this.health = 100;
+    }
+
     get health() {
       return this._health;
     }
@@ -164,27 +188,14 @@
     }
 
     draw(ctx) {
-      ctx.translate(this.rect.center.x, this.rect.center.y);
-      ctx.rotate(this.direction);
-      ctx.fillStyle = this.color;
-      ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      // this.drawBoundingBox(ctx);
+      super.draw(ctx);
       if (this.health < 100) {
         this.drawHealthBar(ctx);
       }
     }
-
-    drawBoundingBox(ctx) {
-      let rect = this.boundingBox;
-      ctx.strokeStyle = '#ffff00';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-    }
-
   }
 
-  class Player extends RectEntity {
+  class Player extends Actor {
 
     draw(ctx) {
       super.draw(ctx);
@@ -201,6 +212,17 @@
     }
   }
 
+  class Enemy extends Actor {
+    constructor() {
+      super();
+      this.rect.size = tileSize;
+    }
+
+    draw(ctx) {
+      super.draw(ctx);
+    }
+  }
+
   class Bullet extends CircleEntity {
     static VELOCITY = 10 * PHI;
     static RADIUS = 2;
@@ -212,18 +234,6 @@
 
     update() {
       this.move(Bullet.VELOCITY);
-    }
-  }
-
-  class Enemy extends RectEntity {
-    constructor() {
-      super();
-      this.rect.size = tileSize;
-      this.health = 100;
-    }
-
-    draw(ctx) {
-      super.draw(ctx);
     }
   }
 
@@ -257,7 +267,6 @@
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
   player.direction = -TAU / 4; // face north
-  player.health = 100;
 
   let entities = [
     player,
