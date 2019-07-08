@@ -62,9 +62,7 @@
 
     update() {}
 
-    preDraw(ctx) {}
     draw(ctx) {}
-    postDraw(ctx) {}
 
     get isOnScreen() {
       return this.rect.isInBounds(SCREEN_SIZE);
@@ -135,7 +133,34 @@
 
   class RectEntity extends ShapeEntity {
 
-    preDraw(ctx) {
+    get health() {
+      return this._health;
+    }
+
+    set health(val) {
+      this._health = Math.max(0, val);
+      if (this._health == 0) {
+        this.isDead = true;
+      }
+    }
+
+    drawHealthBar(ctx) {
+      ctx.lineWidth = 4;
+      ctx.translate(this.rect.center.x - 18, this.rect.center.y - 24);
+
+      ctx.strokeStyle = '#f00';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18 * 2, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#0f0';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18 * 2 / 100 * this.health, 0);
+      ctx.stroke();
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
     draw(ctx) {
@@ -145,9 +170,9 @@
       ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       // this.drawBoundingBox(ctx);
-    }
-
-    postDraw(ctx) {
+      if (this.health < 100) {
+        this.drawHealthBar(ctx);
+      }
     }
 
     drawBoundingBox(ctx) {
@@ -194,44 +219,11 @@
     constructor() {
       super();
       this.rect.size = tileSize;
-      this._health = 100;
-    }
-
-    get health() {
-      return this._health;
-    }
-
-    set health(val) {
-      this._health = Math.max(0, val);
-      if (this._health == 0) {
-        this.isDead = true;
-      }
-    }
-
-    drawHealthBar(ctx) {
-      ctx.lineWidth = 4;
-      ctx.translate(this.rect.center.x - 18, this.rect.center.y - 24);
-
-      ctx.strokeStyle = '#f00';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(18 * 2, 0);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#0f0';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(18 * 2 / 100 * this.health, 0);
-      ctx.stroke();
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      this.health = 100;
     }
 
     draw(ctx) {
       super.draw(ctx);
-      if (this.health < 100) {
-        this.drawHealthBar(ctx);
-      }
     }
   }
 
@@ -265,6 +257,7 @@
   player.rect.size = tileSize;
   player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
   player.direction = -TAU / 4; // face north
+  player.health = 100;
 
   let entities = [
     player,
@@ -277,6 +270,8 @@
     controller.bindKey('l', 'right');
     controller.listen(document);
   }
+
+  let isPlayerHit = false;
 
   /* Handle input */
   function update() {
@@ -313,6 +308,10 @@
     });
 
     bullets.forEach((bullet) => {
+      if (!bullet.isOnScreen) {
+        bullet.isDead = true;
+        return;
+      }
       let p0 = bullet.rect.center;
       let p1 = makePoint(
         p0.x + Bullet.VELOCITY * Math.cos(bullet.direction),
@@ -323,10 +322,14 @@
           let damage = randInt(10) + 45;
           enemy.health -= damage;
           bullet.isDead = true;
+          let explosion = new ExplosionEntity();
+          explosion.rect.center = bullet.rect.center;
+          entities.push(explosion);
         }
       });
     });
 
+    isPlayerHit = false;
     entities.forEach((entity) => {
       if (entity instanceof Enemy) {
         entity.direction = Math.atan2(player.rect.y - entity.rect.y,
@@ -334,25 +337,15 @@
         let distance = distanceBetween(player.rect.center, entity.rect.center);
         entity.move(Math.min(MOVE_VEL, distance));
         if (distance < 1) {
+          player.health -= randInt(10) + 10;
+          isPlayerHit = true;
           entity.isDead = true;
-        }
-        if (entity.isDead) {
           let explosion = new ExplosionEntity();
           explosion.rect.center = entity.rect.center;
           entities.push(explosion);
         }
       }
       entity.update();
-      if (entity instanceof Bullet) {
-        if (!entity.isOnScreen) {
-          entity.isDead = true;
-        }
-        if (entity.isDead) {
-          let explosion = new ExplosionEntity();
-          explosion.rect.center = entity.rect.center;
-          entities.push(explosion);
-        }
-      }
     });
 
     entities = entities.filter((entity) => {
@@ -365,13 +358,15 @@
   /* Update the screen */
   function draw(ctx) {
     // clear screen
-    ctx.fillStyle = '#000000';
+    if (isPlayerHit) {
+      ctx.fillStyle = '#ff0000';
+    } else {
+      ctx.fillStyle = '#000000';
+    }
     ctx.fillRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
     // draw entities
     for (let i in entities) {
-      entities[i].preDraw(ctx);
       entities[i].draw(ctx);
-      entities[i].postDraw(ctx);
     }
   }
 
@@ -381,7 +376,9 @@
     update();
     draw(ctx);
     frameCount++;
-    window.requestAnimationFrame(loop);
+    if (!player.isDead) {
+      window.requestAnimationFrame(loop);
+    }
   }
 
   init();
