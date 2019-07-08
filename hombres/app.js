@@ -77,7 +77,7 @@
         makePoint(this.rect.x,               this.rect.y),
         makePoint(this.rect.x + this.rect.w, this.rect.y),
       ];
-      let theta = this.direction + TAU / 8;
+      let theta = this.direction - TAU / 8;
       let points = [];
       for (let i = 0; i < 4; i++) {
         let r = distanceBetween(this.rect.center, corners[i]);
@@ -88,6 +88,16 @@
         theta += TAU / 4;
       }
       return points;
+    }
+
+    get segments() {
+      let corners = this.corners;
+      return [
+        [corners[0], corners[1]],
+        [corners[1], corners[2]],
+        [corners[2], corners[3]],
+        [corners[3], corners[0]],
+      ];
     }
 
     get boundingBox() {
@@ -126,18 +136,18 @@
   class RectEntity extends ShapeEntity {
 
     preDraw(ctx) {
-      ctx.translate(this.rect.center.x, this.rect.center.y);
-      ctx.rotate(this.direction);
     }
 
     draw(ctx) {
+      ctx.translate(this.rect.center.x, this.rect.center.y);
+      ctx.rotate(this.direction);
       ctx.fillStyle = this.color;
       ctx.fillRect(-this.rect.w/2, -this.rect.h/2, this.rect.w, this.rect.h);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // this.drawBoundingBox(ctx);
     }
 
     postDraw(ctx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      this.drawBoundingBox(ctx);
     }
 
     drawBoundingBox(ctx) {
@@ -153,12 +163,16 @@
 
     draw(ctx) {
       super.draw(ctx);
+      ctx.translate(this.rect.center.x, this.rect.center.y);
+      ctx.rotate(this.direction);
       ctx.strokeStyle = '#ff0000';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(this.rect.w, 0);
       ctx.stroke();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // this.drawBoundingBox(ctx);
     }
   }
 
@@ -180,6 +194,44 @@
     constructor() {
       super();
       this.rect.size = tileSize;
+      this._health = 100;
+    }
+
+    get health() {
+      return this._health;
+    }
+
+    set health(val) {
+      this._health = Math.max(0, val);
+      if (this._health == 0) {
+        this.isDead = true;
+      }
+    }
+
+    drawHealthBar(ctx) {
+      ctx.lineWidth = 4;
+      ctx.translate(this.rect.center.x - 18, this.rect.center.y - 24);
+
+      ctx.strokeStyle = '#f00';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18 * 2, 0);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#0f0';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18 * 2 / 100 * this.health, 0);
+      ctx.stroke();
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    draw(ctx) {
+      super.draw(ctx);
+      if (this.health < 100) {
+        this.drawHealthBar(ctx);
+      }
     }
   }
 
@@ -241,14 +293,78 @@
       bullet.rect.center = player.rect.center;
       bullet.direction = player.direction;
       entities.push(bullet);
-      console.log('PEW!');
     }
-    if (frameCount % 200 == 0) {
+    if (frameCount % 100 == 0) {
       // spawn enemy at the edge of the screen
       let enemy = new Enemy();
       enemy.rect.center = randomPointOnEdgeOfScreen();
       entities.push(enemy);
     }
+
+    let enemies = [];
+    let bullets = [];
+    entities.forEach((entity) => {
+      if (entity instanceof Bullet) {
+        bullets.push(entity);
+      }
+      if (entity instanceof Enemy) {
+        enemies.push(entity);
+      }
+    });
+
+    function doLinesIntersect(p0, p1, q0, q1) {
+      let x1 = p0.x;
+      let y1 = p0.y;
+      let x2 = p1.x;
+      let y2 = p1.y;
+      let x3 = q0.x;
+      let x4 = q1.x;
+      let y3 = q0.y;
+      let y4 = q1.y;
+      // let i1 = [Math.min(x1, x2), Math.max(x1, x2)];
+      // let i2 = [Math.min(x3, x4), Math.max(x3, x4)];
+      // let Ia = [
+      //   Math.max(Math.min(x1, x2), Math.min(x3, x4)),
+      //   Math.min(Math.max(x1, x2), Math.max(x3, x4)),
+      // ];
+      if (Math.max(x1, x2) < Math.min(x3, x4)) {
+        return false; // There is no mutual abcisses
+      }
+      let a1 = (y1-y2) / (x1-x2);
+      let a2 = (y3-y4) / (x3-x4);
+      if (a1 == a2) {
+        return false;
+      }
+      let b1 = y1 - a1 * x1; // = y2-a1*x2;
+      let b2 = y3 - a2 * x3; // = y4-a2*x4;
+
+      let xa = (b2 - b1) / (a1 - a2);
+
+      if (
+        xa < Math.max(Math.min(x1, x2), Math.min(x3, x4)) ||
+        xa > Math.min(Math.max(x1, x2), Math.max(x3, x4))) {
+        return false; // intersection is out of bound
+      } else {
+        return true;
+      }
+    }
+
+    bullets.forEach((bullet) => {
+      let p0 = bullet.rect.center;
+      let p1 = makePoint(
+        p0.x + Bullet.VELOCITY * Math.cos(bullet.direction),
+        p0.y + Bullet.VELOCITY * Math.sin(bullet.direction));
+      enemies.forEach((enemy) => {
+        let segment = enemy.segments[0];
+        let q0 = segment[0];
+        let q1 = segment[1];
+        if (doLinesIntersect(p0, p1, q0, q1)) {
+          let damage = randInt(10) + 45;
+          enemy.health -= damage;
+          bullet.isDead = true;
+        }
+      });
+    });
 
     entities.forEach((entity) => {
       if (entity instanceof Enemy) {
@@ -263,17 +379,17 @@
           let explosion = new ExplosionEntity();
           explosion.rect.center = entity.rect.center;
           entities.push(explosion);
-          console.log('BOOM!');
         }
       }
       entity.update();
       if (entity instanceof Bullet) {
-        entity.isDead = !entity.isOnScreen;
+        if (!entity.isOnScreen) {
+          entity.isDead = true;
+        }
         if (entity.isDead) {
           let explosion = new ExplosionEntity();
           explosion.rect.center = entity.rect.center;
           entities.push(explosion);
-          console.log('BOOM!');
         }
       }
     });
