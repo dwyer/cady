@@ -82,3 +82,38 @@ class Rect {
 function makeRect(x, y, w, h) {
   return new Rect(x, y, w, h);
 }
+
+function doLinesIntersect(p0, p1, q0, q1) {
+  // let i1 = [Math.min(p0.x, p1.x), Math.max(p0.x, p1.x)];
+  // let i2 = [Math.min(q0.x, q1.x), Math.max(q0.x, q1.x)];
+  // let Ia = [
+  //   Math.max(Math.min(p0.x, p1.x), Math.min(q0.x, q1.x)),
+  //   Math.min(Math.max(p0.x, p1.x), Math.max(q0.x, q1.x)),
+  // ];
+  if (Math.max(p0.x, p1.x) < Math.min(q0.x, q1.x)) {
+    return false; // There is no mutual abcisses
+  }
+  let d1 = p0.x - p1.x;
+  let d2 = q0.x - q1.x;
+  if (d1 == 0 || d2 == 0) {
+    // avoid division by zero
+    return false;
+  }
+  let a1 = (p0.y - p1.y) / d1;
+  let a2 = (q0.y - q1.y) / d2;
+  if (a1 == a2) {
+    return false;
+  }
+  let b1 = p0.y - a1 * p0.x; // = p1.y - a1 * p1.x
+  let b2 = q0.y - a2 * q0.x; // = q1.y - a2 * q1.x
+
+  let xa = (b2 - b1) / (a1 - a2);
+
+  if (
+    xa < Math.max(Math.min(p0.x, p1.x), Math.min(q0.x, q1.x)) ||
+    xa > Math.min(Math.max(p0.x, p1.x), Math.max(q0.x, q1.x))) {
+    return false; // intersection is out of bounds
+  } else {
+    return true;
+  }
+}
