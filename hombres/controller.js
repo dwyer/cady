@@ -26,7 +26,7 @@ class Controller {
     this.bindings[key] = this.buttons[buttonName];
   }
 
-  onKeyDown(e) {
+  onkeydown(e) {
     let button = this.bindings[e.key];
     if (button) {
       button.isTapped = !button.isPressed;
@@ -34,20 +34,10 @@ class Controller {
     }
   }
 
-  onKeyUp(e) {
+  onkeyup(e) {
     let button = this.bindings[e.key];
     if (button) {
       button.isPressed = false;
     }
-  }
-
-  listen(obj) {
-    let me = this;
-    obj.onkeyup = function (e) {
-      me.onKeyUp(e);
-    };
-    obj.onkeydown = function (e) {
-      me.onKeyDown(e);
-    };
   }
 }

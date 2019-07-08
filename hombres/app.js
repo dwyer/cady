@@ -3,6 +3,11 @@
   const TAU = 2 * Math.PI;
   const PHI = 1.61803399;
   const SCREEN_SIZE = makeSize(800, 600);
+  const TILE_SIZE = makeSize(32, 32);
+
+  const canvas = document.getElementById('canvas');
+  canvas.width = SCREEN_SIZE.w;
+  canvas.height = SCREEN_SIZE.h;
 
   function randomPointOnEdgeOfScreen() {
       switch (randInt(4)) {
@@ -26,6 +31,7 @@
       this.addButton('left');
       this.addButton('right');
       this.addButton('fire');
+      this.addButton('turn');
 
       this.bindKey('ArrowUp', 'up');
       this.bindKey('ArrowDown', 'down');
@@ -39,6 +45,9 @@
 
       this.bindKey('f', 'fire');
       this.bindKey(' ', 'fire');
+
+      this.bindKey('H', 'turn');
+      this.bindKey('L', 'turn');
     }
   }
 
@@ -54,7 +63,7 @@
     }
 
     move(distance) {
-      let origin = this.rect.origin;
+      const origin = this.rect.origin;
       origin.x += distance * Math.cos(this.direction);
       origin.y += distance * Math.sin(this.direction);
       this.rect.origin = origin;
@@ -69,16 +78,11 @@
     }
 
     get corners() {
-      let corners = [
-        makePoint(this.rect.x + this.rect.w, this.rect.y + this.rect.h),
-        makePoint(this.rect.x,               this.rect.y + this.rect.h),
-        makePoint(this.rect.x,               this.rect.y),
-        makePoint(this.rect.x + this.rect.w, this.rect.y),
-      ];
-      let theta = this.direction - TAU / 8;
+      // FIXME assumes the rect is square
       let points = [];
+      let theta = this.direction - TAU / 8;
+      const r = Math.sqrt(square(this.rect.w) + square(this.rect.h)) / 2;
       for (let i = 0; i < 4; i++) {
-        let r = distanceBetween(this.rect.center, corners[i]);
         let p = makePoint(
           this.rect.center.x + r * Math.cos(theta),
           this.rect.center.y + r * Math.sin(theta));
@@ -197,6 +201,13 @@
 
   class Player extends Actor {
 
+    constructor() {
+      super();
+      this.rect.size = TILE_SIZE;
+      this.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
+      this.direction = -TAU / 4; // face north
+    }
+
     draw(ctx) {
       super.draw(ctx);
       ctx.translate(this.rect.center.x, this.rect.center.y);
@@ -208,14 +219,13 @@
       ctx.lineTo(this.rect.w, 0);
       ctx.stroke();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      // this.drawBoundingBox(ctx);
     }
   }
 
   class Enemy extends Actor {
     constructor() {
       super();
-      this.rect.size = tileSize;
+      this.rect.size = TILE_SIZE;
     }
 
     draw(ctx) {
@@ -254,143 +264,140 @@
     }
   }
 
-  let controller = new MyController();
+  const controller = new MyController();
+  controller.bindKey('h', 'left');
+  controller.bindKey('j', 'down');
+  controller.bindKey('k', 'up');
+  controller.bindKey('l', 'right');
 
-  let tileSize = makeSize(32, 32);
+  document.onkeyup = function (e) {
+    controller.onkeyup(e);
+  };
 
-  let canvas = document.getElementById('canvas');
-  canvas.width = SCREEN_SIZE.w;
-  canvas.height = SCREEN_SIZE.h;
-  let ctx = canvas.getContext('2d');
+  document.onkeydown = function (e) {
+    controller.onkeydown(e);
+  };
 
-  let player = new Player();
-  player.rect.size = tileSize;
-  player.rect.center = makePoint(SCREEN_SIZE.w/2, SCREEN_SIZE.h/2);
-  player.direction = -TAU / 4; // face north
+  function game() {
+    let frameCount = 0;
+    let player = new Player();
+    let entities = [
+      player,
+    ];
+    let isPlayerHit = false;
 
-  let entities = [
-    player,
-  ];
+    /* Handle input */
+    function update() {
+      const MOVE_VEL = 2;
+      const TURN_VEL = 0.06;
 
-  function init() {
-    controller.bindKey('h', 'left');
-    controller.bindKey('j', 'down');
-    controller.bindKey('k', 'up');
-    controller.bindKey('l', 'right');
-    controller.listen(document);
-  }
+      if (controller.buttons.up.isPressed) player.move(MOVE_VEL);
+      if (controller.buttons.down.isPressed) player.move(-MOVE_VEL);
+      if (controller.buttons.left.isPressed) player.turn(-TURN_VEL);
+      if (controller.buttons.right.isPressed) player.turn(TURN_VEL);
+      if (controller.buttons.turn.isTapped) player.direction += TAU / 2;
 
-  let isPlayerHit = false;
-
-  /* Handle input */
-  function update() {
-    const MOVE_VEL = 2;
-    const TURN_VEL = 0.06;
-
-    if (controller.buttons.up.isPressed) player.move(MOVE_VEL);
-    if (controller.buttons.down.isPressed) player.move(-MOVE_VEL);
-    if (controller.buttons.left.isPressed) player.turn(-TURN_VEL);
-    if (controller.buttons.right.isPressed) player.turn(TURN_VEL);
-
-    if (controller.buttons.fire.isTapped) {
-      let bullet = new Bullet();
-      bullet.rect.center = player.rect.center;
-      bullet.direction = player.direction;
-      entities.push(bullet);
-    }
-    if (frameCount % 100 == 0) {
-      // spawn enemy at the edge of the screen
-      let enemy = new Enemy();
-      enemy.rect.center = randomPointOnEdgeOfScreen();
-      entities.push(enemy);
-    }
-
-    let enemies = [];
-    let bullets = [];
-    entities.forEach((entity) => {
-      if (entity instanceof Bullet) {
-        bullets.push(entity);
+      if (controller.buttons.fire.isTapped) {
+        let bullet = new Bullet();
+        bullet.rect.center = player.rect.center;
+        bullet.direction = player.direction;
+        entities.push(bullet);
       }
-      if (entity instanceof Enemy) {
-        enemies.push(entity);
+      if (frameCount % 100 == 0) {
+        // spawn enemy at the edge of the screen
+        let enemy = new Enemy();
+        enemy.rect.center = randomPointOnEdgeOfScreen();
+        entities.push(enemy);
       }
-    });
 
-    bullets.forEach((bullet) => {
-      if (!bullet.isOnScreen) {
-        bullet.isDead = true;
-        return;
-      }
-      let p0 = bullet.rect.center;
-      let p1 = makePoint(
-        p0.x + Bullet.VELOCITY * Math.cos(bullet.direction),
-        p0.y + Bullet.VELOCITY * Math.sin(bullet.direction));
-      enemies.forEach((enemy) => {
-        let corners = enemy.corners;
-        if (doLinesIntersect(p0, p1, corners[0], corners[1])) {
-          let damage = randInt(10) + 45;
-          enemy.health -= damage;
-          bullet.isDead = true;
-          let explosion = new ExplosionEntity();
-          explosion.rect.center = bullet.rect.center;
-          entities.push(explosion);
+      let enemies = [];
+      let bullets = [];
+      entities.forEach((entity) => {
+        if (entity instanceof Bullet) {
+          bullets.push(entity);
+        }
+        if (entity instanceof Enemy) {
+          enemies.push(entity);
         }
       });
-    });
 
-    isPlayerHit = false;
-    entities.forEach((entity) => {
-      if (entity instanceof Enemy) {
-        entity.direction = Math.atan2(player.rect.y - entity.rect.y,
-          player.rect.x - entity.rect.x);
-        let distance = distanceBetween(player.rect.center, entity.rect.center);
-        entity.move(Math.min(MOVE_VEL, distance));
-        if (distance < 1) {
-          player.health -= randInt(10) + 10;
-          isPlayerHit = true;
-          entity.isDead = true;
-          let explosion = new ExplosionEntity();
-          explosion.rect.center = entity.rect.center;
-          entities.push(explosion);
+      bullets.forEach((bullet) => {
+        if (!bullet.isOnScreen) {
+          bullet.isDead = true;
+          return;
+        }
+        let p0 = bullet.rect.center;
+        let p1 = makePoint(
+          p0.x + Bullet.VELOCITY * Math.cos(bullet.direction),
+          p0.y + Bullet.VELOCITY * Math.sin(bullet.direction));
+        enemies.forEach((enemy) => {
+          let corners = enemy.corners;
+          if (doLinesIntersect(p0, p1, corners[0], corners[1])) {
+            let damage = randInt(10) + 45;
+            enemy.health -= damage;
+            bullet.isDead = true;
+            let explosion = new ExplosionEntity();
+            explosion.rect.center = bullet.rect.center;
+            entities.push(explosion);
+          }
+        });
+      });
+
+      isPlayerHit = false;
+      entities.forEach((entity) => {
+        if (entity instanceof Enemy) {
+          entity.direction = Math.atan2(player.rect.y - entity.rect.y,
+            player.rect.x - entity.rect.x);
+          let distance = distanceBetween(player.rect.center, entity.rect.center);
+          entity.move(Math.min(MOVE_VEL, distance));
+          if (distance < 1) {
+            player.health -= randInt(10) + 10;
+            isPlayerHit = true;
+            entity.isDead = true;
+            let explosion = new ExplosionEntity();
+            explosion.rect.center = entity.rect.center;
+            entities.push(explosion);
+          }
+        }
+        entity.update();
+      });
+
+      entities = entities.filter((entity) => {
+        return !entity.isDead;
+      });
+
+      controller.reset();
+    }
+
+    /* Update the screen */
+    function draw(ctx) {
+      // clear screen
+      if (isPlayerHit) {
+        ctx.fillStyle = '#ff0000';
+      } else {
+        ctx.fillStyle = '#000000';
+      }
+      ctx.fillRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
+      // draw entities
+      for (let i in entities) {
+        entities[i].draw(ctx);
+      }
+    }
+
+    (function () {
+      const ctx = canvas.getContext('2d');
+      function loop(_) {
+        update();
+        draw(ctx);
+        frameCount++;
+        if (!player.isDead) {
+          window.requestAnimationFrame(loop);
         }
       }
-      entity.update();
-    });
-
-    entities = entities.filter((entity) => {
-      return !entity.isDead;
-    });
-
-    controller.reset();
-  }
-
-  /* Update the screen */
-  function draw(ctx) {
-    // clear screen
-    if (isPlayerHit) {
-      ctx.fillStyle = '#ff0000';
-    } else {
-      ctx.fillStyle = '#000000';
-    }
-    ctx.fillRect(0, 0, SCREEN_SIZE.w, SCREEN_SIZE.h);
-    // draw entities
-    for (let i in entities) {
-      entities[i].draw(ctx);
-    }
-  }
-
-  let frameCount = 0;
-
-  function loop(_) {
-    update();
-    draw(ctx);
-    frameCount++;
-    if (!player.isDead) {
       window.requestAnimationFrame(loop);
-    }
+    })();
   }
 
-  init();
-  window.requestAnimationFrame(loop);
+  game();
 
 })();
